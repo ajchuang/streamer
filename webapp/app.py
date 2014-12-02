@@ -9,7 +9,7 @@ from boto.s3.connection import S3Connection
 from boto.s3.key import Key
 
 # macros
-UPLOAD_FOLDER = '/home/ubuntu/tmpfiles'
+UPLOAD_FOLDER = '/home/ubuntu/streamer/WebApp/tmpfiles'
 ALLOWED_EXTENSIONS = set(['mp3', 'm4a', 'txt'])
 
 app = Flask(__name__)
@@ -32,44 +32,32 @@ def login():
 			session['username'] = request.form['username']
 			return render_template('upload.html')
 		else:
-			return render_template('loginui.html')
+			return render_template('error_login_error.html')
 
 	return render_template('loginui.html')
 
-# check if the new username has been created
-def check_if_user_exists (username):
-	
-	connection = httplib.HTTPSConnection('api.parse.com', 443)
-	params = urllib.urlencode({"where":json.dumps({
-       "name": username
-     })})
-	connection.connect()
-	connection.request('GET', '/1/classes/user?%s' % params, '', {
-       "X-Parse-Application-Id": "5FB5GBQ6aynPJKyREO0HbdNp6xS6szxtFOwg1qJF",
-       "X-Parse-REST-API-Key": "KJntVTuEDKSsvDtZvHx5i6SfUjuIjSlKdvpdM96G"
-     })
-	
-	result = json.loads(connection.getresponse().read())
-	r = result['results']
-
-	if len(r) == 0:
-		return False
-
-	if 'name' in r[0] and 'password' in r[0]:
-		if result['results'][0]['name'] == username:
-			return True
-	
-	return False
-
 @app.route('/signup', methods=['GET', 'POST'])
-def signup():
-	if request.method == 'POST':
-		if check_if_user_exists(request.form['username']):
-			print 'TODO'	
+def signup_func():
+	return render_template('signup.html')		
 
-# create a random string
-def random_name (length):
-   return ''.join(random.choice(string.lowercase) for i in range(length))
+@app.route('/do_signup', methods=['GET', 'POST'])
+def do_signup():
+	if request.method == 'POST':
+		uname = request.form['username']
+		upass = request.form['password']
+
+		# bad input
+		if (len(uname) == 0 or len(upass) == 0):
+			return render_template('signup.html')
+
+		# check existence
+		if check_if_user_exists(uname):
+			return render_template('error_account_exists.html')
+
+		# the name is okay, let's do something else
+		if create_account (uname, upass):
+			return render_template('upload.html')
+	return render_template('signup.html')
 
 @app.route('/file', methods=['GET', 'POST'])
 def upload():
@@ -229,6 +217,55 @@ def update_user_db():
 	result = json.loads(connection.getresponse().read())
 	print result
 	return True
+
+# check if the new username has been created
+def check_if_user_exists (username):
+	
+	connection = httplib.HTTPSConnection('api.parse.com', 443)
+	params = urllib.urlencode({"where":json.dumps({
+       "name": username
+     })})
+	connection.connect()
+	connection.request('GET', '/1/classes/user?%s' % params, '', {
+       "X-Parse-Application-Id": "5FB5GBQ6aynPJKyREO0HbdNp6xS6szxtFOwg1qJF",
+       "X-Parse-REST-API-Key": "KJntVTuEDKSsvDtZvHx5i6SfUjuIjSlKdvpdM96G"
+     })
+	
+	result = json.loads(connection.getresponse().read())
+	r = result['results']
+
+	if len(r) == 0:
+		return False
+
+	if 'name' in r[0] and 'password' in r[0]:
+		if result['results'][0]['name'] == username:
+			return True
+	
+	return False
+
+# create a new user account
+def create_account (uname, upass):
+	
+	connection = httplib.HTTPSConnection('api.parse.com', 443)
+	connection.connect()
+	connection.request('POST', '/1/classes/user', json.dumps({
+       "name": uname,
+       "password": upass
+     }), {
+       "X-Parse-Application-Id": "5FB5GBQ6aynPJKyREO0HbdNp6xS6szxtFOwg1qJF",
+       "X-Parse-REST-API-Key": "KJntVTuEDKSsvDtZvHx5i6SfUjuIjSlKdvpdM96G",
+       "Content-Type": "application/json"
+     })
+	result = json.loads(connection.getresponse().read())
+
+	print '----- create account -----'
+	print result
+	return True;
+
+
+# create a random string
+def random_name (length):
+   return ''.join(random.choice(string.lowercase) for i in range(length))
 
 if __name__ == '__main__':
     app.run(host='172.31.46.108')
