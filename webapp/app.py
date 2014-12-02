@@ -10,18 +10,26 @@ from boto.s3.key import Key
 
 # macros
 UPLOAD_FOLDER = '/home/ubuntu/streamer/webapp/tmpfiles'
+STATIC_FOLDER = '/home/ubuntu/streamer/webapp/static'
+
 ALLOWED_EXTENSIONS = set(['mp3', 'm4a', 'txt'])
 
 app = Flask(__name__)
 app.secret_key = 'X\x90N!L\x90\xb7\xb9\xf3\x86"M\xa6\xbd\xc2\xe2r\xe2)p\xa1\xa9\x11\x93'
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+#app.config['STATIC_FOLDER'] = STATIC_FOLDER
 app.debug = True
 
 @app.route('/')
 def index():
+	
+	print 'func: index'
+
+	# if login already
 	if 'username' in session:
-		return render_template('upload.html')
-	return render_template('loginui.html')
+		return app.send_static_file('upload.html')
+	
+	return app.send_static_file('loginui.html')
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
@@ -30,15 +38,15 @@ def login():
 		# check PARSE DB
 		if verify_login(request.form['username'], request.form['password']):
 			session['username'] = request.form['username']
-			return render_template('upload.html')
+			return app.send_static_file('upload.html')
 		else:
-			return render_template('error_login_error.html')
+			return app.send_static_file('error_login_error.html')
 
 	return render_template('loginui.html')
 
 @app.route('/signup', methods=['GET', 'POST'])
 def signup_func():
-	return render_template('signup.html')		
+	return app.send_static_file('signup.html')		
 
 @app.route('/do_signup', methods=['GET', 'POST'])
 def do_signup():
@@ -48,16 +56,16 @@ def do_signup():
 
 		# bad input
 		if (len(uname) == 0 or len(upass) == 0):
-			return render_template('error_signup_bad_input.html')
+			return app.send_static_file('error_signup_bad_input.html')
 
 		# check existence
 		if check_if_user_exists(uname):
-			return render_template('error_account_exists.html')
+			return app.send_static_file('error_account_exists.html')
 
 		# the name is okay, let's do something else
 		if create_account (uname, upass):
-			return render_template('upload.html')
-	return render_template('signup.html')
+			return app.send_static_file('upload.html')
+	return app.send_static_file('signup.html')
 
 @app.route('/file', methods=['GET', 'POST'])
 def upload():
@@ -93,18 +101,18 @@ def upload():
 			# remove temp file
 			os.remove (local_path)
 	
-	return render_template('success_upload.html')
+	return app.send_static_file('success_upload.html')
 
 @app.route('/go_back', methods=['GET', 'POST'])
 def go_back():
-	return render_template('upload.html')
+	return app.send_static_file('upload.html')
 
 @app.route('/logout', methods=['GET', 'POST'])
 def logout():
 	print 'logout'
     # remove the username from the session if it's there
 	session.pop('username', None)
-	return render_template('loginui.html')
+	return app.send_static_file('loginui.html')
 
 # utility function
 def allowed_file(filename):
