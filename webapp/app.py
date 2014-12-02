@@ -48,7 +48,7 @@ def do_signup():
 
 		# bad input
 		if (len(uname) == 0 or len(upass) == 0):
-			return render_template('signup.html')
+			return render_template('error_signup_bad_input.html')
 
 		# check existence
 		if check_if_user_exists(uname):
@@ -265,7 +265,7 @@ def create_account (uname, upass):
 
 # create a random string
 def random_name (length):
-   return ''.join(random.choice(string.lowercase) for i in range(length))
+	return ''.join(random.choice(string.lowercase) for i in range(length))
 
 if __name__ == '__main__':
     app.run(host='172.31.46.108')
