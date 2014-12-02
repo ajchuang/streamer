@@ -9,7 +9,7 @@ from boto.s3.connection import S3Connection
 from boto.s3.key import Key
 
 # macros
-UPLOAD_FOLDER = '/home/ubuntu/streamer/WebApp/tmpfiles'
+UPLOAD_FOLDER = '/home/ubuntu/streamer/webapp/tmpfiles'
 ALLOWED_EXTENSIONS = set(['mp3', 'm4a', 'txt'])
 
 app = Flask(__name__)
@@ -89,7 +89,14 @@ def upload():
 			
 			# update PARSE - create user-music relation
 			update_user_db ()
-			print 'i am ', session['username']
+
+			# remove temp file
+			os.remove (local_path)
+	
+	return render_template('success_upload.html')
+
+@app.route('/go_back', methods=['GET', 'POST'])
+def go_back():
 	return render_template('upload.html')
 
 @app.route('/logout', methods=['GET', 'POST'])
